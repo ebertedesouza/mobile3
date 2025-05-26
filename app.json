@@ -19,11 +19,16 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.e3desouza.mobile"
+      "package": "com.e3desouza.mobile",
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      "expo-local-authentication",
+      "expo-notifications"
+    ],
     "extra": {
       "eas": {
         "projectId": "a2f384c6-198f-449d-8f4a-45d5bd6aba19"

@@ -6,16 +6,30 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_KOTLIN_VERSION": "1.9.0"
+      }
     },
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk" 
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_KOTLIN_VERSION": "1.9.0"
       }
     },
     "production": {
-      "autoIncrement": true
+      "developmentClient": false,
+      "distribution": "store",
+      "android": {
+        "buildType": "apk"
+      },
+      "autoIncrement": true,
+      "env": {
+        "EXPO_KOTLIN_VERSION": "1.9.0"
+      }
     }
   },
   "submit": {
