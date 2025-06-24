@@ -43,8 +43,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (hasUser) {
         api.defaults.headers.common['Authorization'] = `Bearer ${hasUser.token}`;
+        console.log("TOKEN CARREGADO DO STORAGE:", api.defaults.headers.common['Authorization']);
         setUser(hasUser);
       }
+
       setLoading(false);
     }
 
@@ -63,6 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await AsyncStorage.setItem('@santanapizzaria', JSON.stringify(data));
 
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      console.log("TOKEN SETADO NO LOGIN:", api.defaults.headers.common['Authorization']);
       setUser(data);
       setLoadingAuth(false);
     } catch (err) {
