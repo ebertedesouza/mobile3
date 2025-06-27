@@ -17,6 +17,7 @@ import { ListItem } from '../../components/ListItem';
 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StackPramsList } from '../../routes/app.routes';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type RouteDetailParams = {
   Order: {
@@ -61,7 +62,15 @@ export default function Order() {
 
   useEffect(() => {
     async function loadInfo() {
-      const response = await api.get('/category');
+      const userData = await AsyncStorage.getItem('@santanapizzaria');
+      const user = userData ? JSON.parse(userData) : null;
+
+      if (!user?.token) return;
+
+      const response = await api.get('/category', {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+
       setCategory(response.data);
       setCategorySelected(response.data[0]);
     }
@@ -70,11 +79,18 @@ export default function Order() {
 
   useEffect(() => {
     async function loadProducts() {
+      if (!categorySelected) return;
+
+      const userData = await AsyncStorage.getItem('@santanapizzaria');
+      const user = userData ? JSON.parse(userData) : null;
+
+      if (!user?.token) return;
+
       const response = await api.get('/category/product', {
-        params: {
-          category_id: categorySelected?.id,
-        },
+        headers: { Authorization: `Bearer ${user.token}` },
+        params: { category_id: categorySelected.id },
       });
+
       setProducts(response.data);
       setProductSelected(response.data[0]);
     }
@@ -83,14 +99,17 @@ export default function Order() {
 
   async function handleCloseOrder() {
     try {
+      const userData = await AsyncStorage.getItem('@santanapizzaria');
+      const user = userData ? JSON.parse(userData) : null;
+      if (!user?.token) return;
+
       await api.delete('/order', {
-        params: {
-          order_id: route.params?.order_id,
-        },
+        headers: { Authorization: `Bearer ${user.token}` },
+        params: { order_id: route.params?.order_id },
       });
       navigation.goBack();
     } catch (err) {
-      console.log("Erro ao fechar o pedido:", err);
+      console.log('Erro ao fechar o pedido:', err);
     }
   }
 
@@ -104,13 +123,21 @@ export default function Order() {
 
   async function handleAdd() {
     try {
-      const response = await api.post('/order/add', {
-        order_id: route.params?.order_id,
-        product_id: productSelected?.id,
-        amount: Number(amount),
-      });
+      const userData = await AsyncStorage.getItem('@santanapizzaria');
+      const user = userData ? JSON.parse(userData) : null;
+      if (!user?.token) return;
 
-      let data = {
+      const response = await api.post(
+        '/order/add',
+        {
+          order_id: route.params?.order_id,
+          product_id: productSelected?.id,
+          amount: Number(amount),
+        },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      const data = {
         id: response.data.id,
         product_id: productSelected?.id as string,
         name: productSelected?.name as string,
@@ -119,19 +146,26 @@ export default function Order() {
 
       setItems((oldArray) => [...oldArray, data]);
     } catch (err) {
-      console.log("Erro ao adicionar produto:", err);
+      console.log('Erro ao adicionar produto:', err);
     }
   }
 
   async function handleDeleteItem(item_id: string) {
-    await api.delete('/order/remove', {
-      params: {
-        item_id: item_id,
-      },
-    });
+    try {
+      const userData = await AsyncStorage.getItem('@santanapizzaria');
+      const user = userData ? JSON.parse(userData) : null;
+      if (!user?.token) return;
 
-    let removeItem = items.filter((item) => item.id !== item_id);
-    setItems(removeItem);
+      await api.delete('/order/remove', {
+        headers: { Authorization: `Bearer ${user.token}` },
+        params: { item_id: item_id },
+      });
+
+      const removeItem = items.filter((item) => item.id !== item_id);
+      setItems(removeItem);
+    } catch (err) {
+      console.log('Erro ao deletar item:', err);
+    }
   }
 
   function handleFinishOrder() {
@@ -197,11 +231,7 @@ export default function Order() {
         renderItem={({ item }) => <ListItem data={item} deleteItem={handleDeleteItem} />}
       />
 
-      <Modal
-        transparent={true}
-        visible={modalCategoryVisible}
-        animationType="fade"
-      >
+      <Modal transparent visible={modalCategoryVisible} animationType="fade">
         <ModalPicker
           handleCloseModal={() => setModalCategoryVisible(false)}
           options={category}
@@ -209,11 +239,7 @@ export default function Order() {
         />
       </Modal>
 
-      <Modal
-        transparent={true}
-        visible={modalProductVisible}
-        animationType="fade"
-      >
+      <Modal transparent visible={modalProductVisible} animationType="fade">
         <ModalPicker
           handleCloseModal={() => setModalProductVisible(false)}
           options={products}

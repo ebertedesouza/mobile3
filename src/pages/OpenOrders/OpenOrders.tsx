@@ -1,93 +1,113 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TextInput, TouchableOpacity, Modal, ScrollView } from 'react-native'
-import { api } from '../../service/api'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  TextInput,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+} from 'react-native';
+import { api } from '../../service/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Item {
-  id: string
-  product_id: string
-  amount: number
+  id: string;
+  product_id: string;
+  amount: number;
   product: {
-    name: string
-  }
+    name: string;
+  };
 }
 
 interface Order {
-  id: string
-  table: number
-  items: Item[]
+  id: string;
+  table: number;
+  items: Item[];
 }
 
 const OpenOrders = () => {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [newTable, setNewTable] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [modalVisible, setModalVisible] = useState(false)
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [newTable, setNewTable] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
-    fetchOrders()
-  }, [])
+    fetchOrders();
+  }, []);
 
   const fetchOrders = async () => {
     try {
-      const userData = await AsyncStorage.getItem('@santanapizzaria')
-      const user = userData ? JSON.parse(userData) : null
-      if (!user?.token) {
-        setError('Usuário não autenticado.')
-        return
-      }
-      api.defaults.headers.common['Authorization'] = `Bearer ${user.token}`
-      setLoading(true)
-      const response = await api.get('/orders')
-      setOrders(response.data)
-      setError(null)
-    } catch (err) {
-      setError('Erro ao buscar pedidos.')
+      setLoading(true);
+      const userData = await AsyncStorage.getItem('@santanapizzaria');
+      const user = userData ? JSON.parse(userData) : null;
+
+      if (!user?.token) return;
+
+      const response = await api.get('/orders', {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+
+      setOrders(response.data);
+      setError(null);
+    } catch {
+      setError('Erro ao buscar pedidos.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchOrderDetail = async (order_id: string) => {
     try {
-      const userData = await AsyncStorage.getItem('@santanapizzaria')
-      const user = userData ? JSON.parse(userData) : null
-      if (!user?.token) return
-      api.defaults.headers.common['Authorization'] = `Bearer ${user.token}`
+      const userData = await AsyncStorage.getItem('@santanapizzaria');
+      const user = userData ? JSON.parse(userData) : null;
+
+      if (!user?.token) return;
+
       const response = await api.get('/order/detail', {
-        params: { order_id }
-      })
-      setSelectedOrder(response.data)
-      setModalVisible(true)
-    } catch (err) {
-      setError('Erro ao buscar detalhes do pedido.')
+        headers: { Authorization: `Bearer ${user.token}` },
+        params: { order_id },
+      });
+
+      setSelectedOrder(response.data);
+      setModalVisible(true);
+    } catch {
+      setError('Erro ao buscar detalhes do pedido.');
     }
-  }
+  };
 
   const updateOrder = async (order_id: string, table: number) => {
-    if (!table) return
+    if (!table) return;
     try {
-      const userData = await AsyncStorage.getItem('@santanapizzaria')
-      const user = userData ? JSON.parse(userData) : null
-      if (!user?.token) return
-      api.defaults.headers.common['Authorization'] = `Bearer ${user.token}`
-      await api.put('/order/update', { order_id, table })
-      setEditingId(null)
-      fetchOrders()
-    } catch (err) {
-      setError('Erro ao atualizar mesa.')
+      const userData = await AsyncStorage.getItem('@santanapizzaria');
+      const user = userData ? JSON.parse(userData) : null;
+
+      if (!user?.token) return;
+
+      await api.put(
+        '/order/update',
+        { order_id, table },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      setEditingId(null);
+      fetchOrders();
+    } catch {
+      setError('Erro ao atualizar mesa.');
     }
-  }
+  };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3fffa3" />
       </View>
-    )
+    );
   }
 
   if (error) {
@@ -95,7 +115,7 @@ const OpenOrders = () => {
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>{error}</Text>
       </View>
-    )
+    );
   }
 
   return (
@@ -140,8 +160,8 @@ const OpenOrders = () => {
                 <TouchableOpacity
                   style={styles.editButton}
                   onPress={() => {
-                    setEditingId(item.id)
-                    setNewTable(String(item.table))
+                    setEditingId(item.id);
+                    setNewTable(String(item.table));
                   }}
                 >
                   <Text style={styles.editText}>Editar</Text>
@@ -183,8 +203,8 @@ const OpenOrders = () => {
         </View>
       </Modal>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -323,6 +343,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-})
+});
 
-export default OpenOrders
+export default OpenOrders;

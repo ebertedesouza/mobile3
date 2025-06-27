@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  Image,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StackPramsList } from '../../routes/app.routes';
 import { api } from '../../service/api';
 import * as LocalAuthentication from 'expo-local-authentication';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SignIn() {
   const navigation = useNavigation<NativeStackNavigationProp<StackPramsList>>();
@@ -30,7 +40,18 @@ export default function SignIn() {
 
     try {
       const response = await api.post('/session', { email, password });
+
       if (response.data) {
+        await AsyncStorage.setItem(
+          '@santanapizzaria',
+          JSON.stringify({
+            token: response.data.token,
+            user: response.data.user,
+          })
+        );
+
+        api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+
         navigation.reset({
           index: 0,
           routes: [{ name: 'Dashboard' }],
@@ -61,6 +82,16 @@ export default function SignIn() {
       });
 
       if (result.success) {
+        const storedUser = await AsyncStorage.getItem('@santanapizzaria');
+
+        if (!storedUser) {
+          Alert.alert('Erro', 'Nenhum usuário salvo para login com digital.');
+          return;
+        }
+
+        const user = JSON.parse(storedUser);
+        api.defaults.headers.common['Authorization'] = `Bearer ${user.token}`;
+
         navigation.reset({
           index: 0,
           routes: [{ name: 'Dashboard' }],
@@ -75,10 +106,7 @@ export default function SignIn() {
 
   return (
     <View style={styles.container}>
-      <Image
-        style={styles.logo}
-        source={require('../../assets/logo.png')}
-      />
+      <Image style={styles.logo} source={require('../../assets/logo.png')} />
 
       <View style={styles.inputContainer}>
         <TextInput
@@ -119,64 +147,13 @@ export default function SignIn() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1d1d2e',
-  },
-  logo: {
-    width: 200,
-    height: 100,
-    resizeMode: 'contain',
-    marginBottom: 40,
-  },
-  inputContainer: {
-    width: '90%',
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  input: {
-    width: '100%',
-    height: 45,
-    backgroundColor: '#101026',
-    marginBottom: 12,
-    borderRadius: 4,
-    paddingHorizontal: 10,
-    color: '#FFF',
-    fontSize: 16,
-  },
-  button: {
-    width: '100%',
-    height: 45,
-    backgroundColor: '#3fffa3',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#101026',
-  },
-  errorText: {
-    color: '#ff4d4d',
-    marginBottom: 12,
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  buttonBiometry: {
-    marginTop: 12,
-    width: '100%',
-    height: 45,
-    backgroundColor: '#00BFFF',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonTextBiometry: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1d1d2e' },
+  logo: { width: 200, height: 100, resizeMode: 'contain', marginBottom: 40 },
+  inputContainer: { width: '90%', alignItems: 'center', paddingVertical: 20 },
+  input: { width: '100%', height: 45, backgroundColor: '#101026', marginBottom: 12, borderRadius: 4, paddingHorizontal: 10, color: '#FFF', fontSize: 16 },
+  button: { width: '100%', height: 45, backgroundColor: '#3fffa3', borderRadius: 4, justifyContent: 'center', alignItems: 'center' },
+  buttonText: { fontSize: 18, fontWeight: 'bold', color: '#101026' },
+  errorText: { color: '#ff4d4d', marginBottom: 12, fontSize: 14, fontWeight: 'bold' },
+  buttonBiometry: { marginTop: 12, width: '100%', height: 45, backgroundColor: '#00BFFF', borderRadius: 4, justifyContent: 'center', alignItems: 'center' },
+  buttonTextBiometry: { fontSize: 16, fontWeight: 'bold', color: '#FFF' },
 });

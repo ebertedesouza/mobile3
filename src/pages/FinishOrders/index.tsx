@@ -5,6 +5,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StackPramsList } from '../../routes/app.routes';
 import { api } from '../../service/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type RouteDetailParams = {
   FinishOrder: {
@@ -23,16 +24,29 @@ export default function FinishOrder() {
   async function handleFinish() {
     setLoading(true);
     try {
-      await api.put('/order/enviar', {
-        order_id: route.params?.order_id
-      });
+      const userData = await AsyncStorage.getItem('@santanapizzaria');
+      const user = userData ? JSON.parse(userData) : null;
+
+      if (!user?.token) return;
+
+      await api.put(
+        '/order/enviar',
+        {
+          order_id: route.params?.order_id,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      );
 
       navigation.reset({
         index: 0,
         routes: [{ name: 'Dashboard' }],
       });
     } catch (err) {
-      console.log("ERRO AO FINALIZAR, tente mais tarde");
+      console.log('ERRO AO FINALIZAR, tente mais tarde', err);
     } finally {
       setLoading(false);
     }
@@ -63,7 +77,7 @@ const styles = StyleSheet.create({
     paddingVertical: '5%',
     paddingHorizontal: '4%',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   alert: {
     fontSize: 20,
@@ -90,6 +104,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginRight: 8,
     fontWeight: 'bold',
-    color: '#1d1d2e'
-  }
+    color: '#1d1d2e',
+  },
 });
